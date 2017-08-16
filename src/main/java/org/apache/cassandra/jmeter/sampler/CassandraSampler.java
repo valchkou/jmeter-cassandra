@@ -52,7 +52,8 @@ public class CassandraSampler extends AbstractCassandaTestElement implements Sam
     public CassandraSampler() {
     }
 
-    @Override
+    
+    @Override	
     public SampleResult sample(Entry e) {
         log.debug("sampling CQL");
 
@@ -103,7 +104,7 @@ public class CassandraSampler extends AbstractCassandaTestElement implements Sam
     /**
      * @see org.apache.jmeter.samplers.AbstractSampler#applies(org.apache.jmeter.config.ConfigTestElement)
      */
-    @Override
+    
     public boolean applies(ConfigTestElement configElement) {
         String guiClass = configElement.getProperty(TestElement.GUI_CLASS).getStringValue();
         return APPLIABLE_CONFIG_CLASSES.contains(guiClass);

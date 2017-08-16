@@ -84,16 +84,16 @@ public class CassandraConnection extends AbstractTestElement
             // in driver v2.0.2+, we can use the default constructor on
             // dcawareroundrobinpolicy
             if (localDataCenter.isEmpty()) {
-                loadBalancingPolicy = new DCAwareRoundRobinPolicy();
+                loadBalancingPolicy = DCAwareRoundRobinPolicy.builder().build();
             }   else {
-                loadBalancingPolicy = new DCAwareRoundRobinPolicy(localDataCenter);
+                loadBalancingPolicy = DCAwareRoundRobinPolicy.builder().withLocalDc(localDataCenter).build();
             }
         } else if (loadBalancer.contentEquals(WHITELIST)) {
             loadBalancingPolicy = new WhiteListPolicy(new RoundRobinPolicy(), contactPointsIS);
         } else if (loadBalancer.contentEquals(ROUND_ROBIN)) {
             loadBalancingPolicy = new RoundRobinPolicy();
         } else if (loadBalancer.contentEquals(DC_TOKEN_AWARE)) {
-            loadBalancingPolicy = new TokenAwarePolicy(new DCAwareRoundRobinPolicy());
+            loadBalancingPolicy = new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder().build());
         } else if (loadBalancer.contentEquals(DEFAULTLOADBALANCER)) {
             loadBalancingPolicy = null;
         }
