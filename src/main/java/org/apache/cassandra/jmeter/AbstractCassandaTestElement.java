@@ -16,6 +16,7 @@ package org.apache.cassandra.jmeter;
  */
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.schemabuilder.UDTType;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.jmeter.save.CSVSaveService;
 import org.apache.jmeter.testelement.AbstractTestElement;
@@ -133,7 +134,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
 
         } else if (PREPARED.equals(_queryType) || DYNAMIC_BATCH.equals(_queryType)) {
             BoundStatement pstmt = getPreparedStatement(conn);
-            setArguments(pstmt);
+            setArguments(conn, pstmt);
             pstmt.setConsistencyLevel(getConsistencyLevelCL()) ;
             stmt = pstmt;
             if (DYNAMIC_BATCH.equals(_queryType)) {
@@ -153,7 +154,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
         stmt.setConsistencyLevel(getConsistencyLevelCL());
         rs = conn.execute(stmt);
         batchStatement.clear();   // You've got to be kidding!
-        return getStringFromResultSet(rs).getBytes(ENCODING);
+        return getStringFromResultSet(conn, rs).getBytes(ENCODING);
     }
 
     private static byte[] hexStringToByteArray(String s) throws ParseException {
@@ -192,7 +193,22 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
         return "0x" + new String(hexChars);
     }
 
-    private void setArguments(BoundStatement pstmt) throws IOException {
+    /**
+     * Returns the Java Class corresponding to the given DataType
+     * <p>
+     * This method mimics the removed asJavaClass() method of cassandra-driver-core-2.0
+     * to allow compatibility with cassandra-driver-core-3.0
+     *
+     * @param  conn  connection to a Cassandra cluster
+     * @param  tp    data type that's supported by Cassandra
+     * @return       Java Class corresponding to tp param
+     */
+    private Class<?> asJavaClass(Session conn, DataType tp) {
+        CodecRegistry cr = conn.getCluster().getConfiguration().getCodecRegistry();
+        return cr.codecFor(tp).getJavaType().getRawType();
+    }
+
+    private void setArguments(Session conn, BoundStatement pstmt) throws IOException {
         if (getQueryArguments().trim().length()==0) {
             return;
         }
@@ -205,12 +221,12 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
             throw new RuntimeException("number of arguments ("+arguments.length+") and number in stmt (" + colDefs.size() + ") are not equal");
         }
 
-
+        CodecRegistry cr = conn.getCluster().getConfiguration().getCodecRegistry();
         for (int i = 0; i < arguments.length; i++) {
             String argument = arguments[i];
 
             DataType tp = colDefs.getType(i);
-            Class<?> javaType = tp.asJavaClass();
+            Class<?> javaType = asJavaClass(conn,tp);
             try {
                 if (javaType == Integer.class)
                     pstmt.setInt(i, Integer.parseInt(argument));
@@ -219,13 +235,22 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 else if (javaType == ByteBuffer.class)
                     pstmt.setBytes(i, ByteBuffer.wrap(hexStringToByteArray(argument)));
                 else if (javaType == Date.class) {
-                    if (argument.length() == (CASSANDRA_DATE_FORMAT_STRING1 + "+ZZZ").length())
-                        pstmt.setDate(i, CassandraDateFormat1.parse(argument));
-                    else if (argument.length() == CASSANDRA_DATE_FORMAT_STRING2.length())
-                        pstmt.setDate(i, CassandraDateFormat2.parse(argument));
-                    else if (argument.length() == CASSANDRA_DATE_FORMAT_STRING3.length())
-                        pstmt.setDate(i, CassandraDateFormat3.parse(argument));
-                    }
+					Date date = null;
+                    if (argument.length() == (CASSANDRA_DATE_FORMAT_STRING1 + "+ZZZ").length()){
+						date =  CassandraDateFormat1.parse(argument);
+					}
+                    else if (argument.length() == CASSANDRA_DATE_FORMAT_STRING2.length()) {
+						date =  CassandraDateFormat2.parse(argument);
+						
+					}
+                    else if (argument.length() == CASSANDRA_DATE_FORMAT_STRING3.length()) {
+						date =  CassandraDateFormat3.parse(argument);
+					}
+					if (date != null) {
+						LocalDate locDate = LocalDate.fromMillisSinceEpoch(date.getTime());
+						pstmt.setDate(i, locDate);
+					}
+                }
 
                 else if (javaType == BigDecimal.class)
                         pstmt.setDecimal(i, new BigDecimal(argument));
@@ -246,19 +271,19 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 else if (javaType == BigInteger.class)
                     pstmt.setVarint(i, new BigInteger(argument));
                     else if (javaType == TupleValue.class) {
-                    TupleValue tup = (TupleValue) tp.parse(argument);
+                    TupleValue tup = (TupleValue) cr.codecFor(tp).parse(argument);
                     pstmt.setTupleValue(i, tup);
                 } else if (javaType == UDTValue.class) {
-                    UDTValue udt = (UDTValue) tp.parse(argument);
+                    UDTValue udt = (UDTValue) cr.codecFor(tp).parse(argument);
                     pstmt.setUDTValue(i, udt);
                     } else if (javaType.isAssignableFrom(Set.class)) {
-                    Set<?> theSet = (Set<?>) tp.parse(argument);
+                    Set<?> theSet = (Set<?>) cr.codecFor(tp).parse(argument);
                     pstmt.setSet(i,theSet);
                 } else if (javaType.isAssignableFrom(List.class)) {
-                    List<?> theList = (List<?>) tp.parse(argument);
+                    List<?> theList = (List<?>) cr.codecFor(tp).parse(argument);
                     pstmt.setList(i,theList);
                 } else if (javaType.isAssignableFrom(Map.class)) {
-                    Map<?,?> theMap = (Map<?,?>) tp.parse(argument);
+                    Map<?,?> theMap = (Map<?,?>) cr.codecFor(tp).parse(argument);
                     pstmt.setMap(i,theMap);
                 }
                 else
@@ -317,7 +342,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
            return o.toString();
     }
 
-    private Object getObject ( Row row, int index ) {
+    private Object getObject ( Session conn, Row row, int index) {
 
 
         if (row.isNull(index))
@@ -325,9 +350,10 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
 
 
         DataType columnType = row.getColumnDefinitions().getType(index);
+        Class<?> javaType = asJavaClass(conn,columnType);
         if (columnType.isCollection()) {
-            if (columnType.asJavaClass().isAssignableFrom(Set.class)) {
-                Class<?> innerType = columnType.getTypeArguments().get(0).asJavaClass();
+            if (javaType.isAssignableFrom(Set.class)) {
+                Class<?> innerType = asJavaClass(conn,columnType.getTypeArguments().get(0));
                 StringBuilder sb = new StringBuilder("{");
                 String comma = "";
                 for (Object o : row.getSet(index,innerType)) {
@@ -337,8 +363,8 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 sb.append("}");
                 return sb;
             }
-            if (columnType.asJavaClass().isAssignableFrom(List.class)) {
-                Class<?> innerType = columnType.getTypeArguments().get(0).asJavaClass();
+            if (javaType.isAssignableFrom(List.class)) {
+                Class<?> innerType = asJavaClass(conn,columnType.getTypeArguments().get(0));
                 StringBuilder sb = new StringBuilder("[");
                 String comma = "";
                 for (Object o : row.getList(index, innerType)) {
@@ -348,9 +374,9 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 sb.append("]");
                 return sb;
             }
-            if (columnType.asJavaClass().isAssignableFrom(Map.class)) {
-                Class<?> keyType = columnType.getTypeArguments().get(0).asJavaClass();
-                Class<?> valueType = columnType.getTypeArguments().get(1).asJavaClass();
+            if (javaType.isAssignableFrom(Map.class)) {
+                Class<?> keyType = asJavaClass(conn,columnType.getTypeArguments().get(0));
+                Class<?> valueType = asJavaClass(conn,columnType.getTypeArguments().get(1));
                 StringBuilder sb = new StringBuilder("{");
                 String comma = "";
                 for (Map.Entry<?,?> e :  row.getMap(index, keyType, valueType).entrySet()) {
@@ -366,8 +392,6 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
             throw new RuntimeException("Unknown collection type: " + columnType.getName() );
         }
 
-        Class<?> javaType = columnType.asJavaClass();
-
         if (javaType == Integer.class)
             return row.getInt(index);
         if (javaType == Boolean.class)
@@ -375,7 +399,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
         if (javaType == ByteBuffer.class)
             return row.getBytes(index);
         if (javaType == Date.class)
-            return CassandraDateFormat1.format(row.getDate(index));
+            return CassandraDateFormat1.format(row.getTimestamp(index));
         if (javaType == BigDecimal.class)
             return row.getDecimal(index);
         if (javaType == Double.class)
@@ -410,7 +434,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
      * @return a Data object
      */
 
-    private String getStringFromResultSet(ResultSet rs) throws UnsupportedEncodingException {
+    private String getStringFromResultSet(Session conn, ResultSet rs) throws UnsupportedEncodingException {
 
         ColumnDefinitions meta = rs.getColumnDefinitions();
 
@@ -441,9 +465,9 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
             j++;
             for (int i = 0; i < numColumns; i++) {
 
-                Object o = getObject(crow,i) ;
-
-                if (rs.getColumnDefinitions().getType(i).asJavaClass() == ByteBuffer.class) {
+                Object o = getObject(conn, crow,i) ;
+                Class<?> javaType = asJavaClass(conn,rs.getColumnDefinitions().getType(i));
+                if (javaType == ByteBuffer.class) {
                     o = bytesToHex((ByteBuffer) o);
                 }
 
