@@ -17,6 +17,7 @@ package org.apache.cassandra.jmeter;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.schemabuilder.UDTType;
+import org.apache.cassandra.jmeter.domain.SimpleDateFormatWithZone;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.jmeter.save.CSVSaveService;
 import org.apache.jmeter.testelement.AbstractTestElement;
@@ -69,7 +70,7 @@ public abstract class AbstractCassandraTestElement extends AbstractTestElement i
     public static final String CASSANDRA_DATE_FORMAT_STRING1 = "yyyy-MM-dd HH:mm:ssZ";
     public static final String CASSANDRA_DATE_FORMAT_STRING2 = "yyyy-MM-dd HH:mm:ss";
     public static final String CASSANDRA_DATE_FORMAT_STRING3 = "yyyy-MM-dd";
-    public final SimpleDateFormat CassandraDateFormat1 = new SimpleDateFormat(CASSANDRA_DATE_FORMAT_STRING1);
+    public final SimpleDateFormat CassandraDateFormat1 = new SimpleDateFormatWithZone(CASSANDRA_DATE_FORMAT_STRING1, TimeZone.getTimeZone("UTC"));
     public final SimpleDateFormat CassandraDateFormat2 = new SimpleDateFormat(CASSANDRA_DATE_FORMAT_STRING2);
     public final SimpleDateFormat CassandraDateFormat3 = new SimpleDateFormat(CASSANDRA_DATE_FORMAT_STRING3);
 
