@@ -16,7 +16,7 @@ package org.apache.cassandra.jmeter.processor;
  */
 
 import com.datastax.driver.core.Session;
-import org.apache.cassandra.jmeter.AbstractCassandaTestElement;
+import org.apache.cassandra.jmeter.AbstractCassandraTestElement;
 import org.apache.cassandra.jmeter.config.CassandraConnection;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.jorphan.util.JOrphanUtils;
@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * As pre- and post-processors essentially do the same this class provides the implementation.
  */
-public abstract class AbstractCassandraProcessor extends AbstractCassandaTestElement {
+public abstract class AbstractCassandraProcessor extends AbstractCassandraTestElement {
     
     private static final Logger log = LoggingManager.getLoggerForClass();
 
@@ -49,7 +49,7 @@ public abstract class AbstractCassandraProcessor extends AbstractCassandaTestEle
         } catch (UnsupportedOperationException ex) {
             log.warn("Execution Problem in "+ getName() + ": " + ex.toString());
         } finally {
-            AbstractCassandaTestElement.close(conn);
+            AbstractCassandraTestElement.close(conn);
         }
     }
 

@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A base class for all Cassandra test elements handling the basics of a CQL request.
  *
  */
-public abstract class AbstractCassandaTestElement extends AbstractTestElement implements TestStateListener{
+public abstract class AbstractCassandraTestElement extends AbstractTestElement implements TestStateListener{
     private static final long serialVersionUID = 235L;
 
     private static final Logger log = LoggingManager.getLoggerForClass();
@@ -106,7 +106,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
     /**
      * Creates a CassandraSampler.
      */
-    protected AbstractCassandaTestElement() {
+    protected AbstractCassandraTestElement() {
     }
 
     /**

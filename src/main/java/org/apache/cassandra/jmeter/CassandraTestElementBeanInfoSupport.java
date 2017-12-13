@@ -65,12 +65,12 @@ public abstract class CassandraTestElementBeanInfoSupport extends BeanInfoSuppor
 
         p = property("queryType"); // $NON-NLS-1$
         p.setValue(NOT_UNDEFINED, Boolean.TRUE);
-        p.setValue(DEFAULT, AbstractCassandaTestElement.SIMPLE);
+        p.setValue(DEFAULT, AbstractCassandraTestElement.SIMPLE);
         p.setValue(NOT_OTHER,Boolean.TRUE);
         p.setValue(TAGS,new String[]{
-                AbstractCassandaTestElement.SIMPLE,
-                AbstractCassandaTestElement.PREPARED,
-                AbstractCassandaTestElement.DYNAMIC_BATCH
+                AbstractCassandraTestElement.SIMPLE,
+                AbstractCassandraTestElement.PREPARED,
+                AbstractCassandraTestElement.DYNAMIC_BATCH
                 });
 
         p = property("consistencyLevel"); // $NON-NLS-1$
@@ -78,15 +78,15 @@ public abstract class CassandraTestElementBeanInfoSupport extends BeanInfoSuppor
         p.setValue(DEFAULT, "ONE");
         p.setValue(NOT_OTHER,Boolean.TRUE);
         p.setValue(TAGS,new String[]{
-                AbstractCassandaTestElement.ANY,
-                AbstractCassandaTestElement.ONE,
-                AbstractCassandaTestElement.QUORUM,
-                AbstractCassandaTestElement.TWO,
-                AbstractCassandaTestElement.THREE,
-                AbstractCassandaTestElement.ALL,
-                AbstractCassandaTestElement.LOCAL_ONE,
-                AbstractCassandaTestElement.LOCAL_QUORUM,
-                AbstractCassandaTestElement.EACH_QUORUM
+                AbstractCassandraTestElement.ANY,
+                AbstractCassandraTestElement.ONE,
+                AbstractCassandraTestElement.QUORUM,
+                AbstractCassandraTestElement.TWO,
+                AbstractCassandraTestElement.THREE,
+                AbstractCassandraTestElement.ALL,
+                AbstractCassandraTestElement.LOCAL_ONE,
+                AbstractCassandraTestElement.LOCAL_QUORUM,
+                AbstractCassandraTestElement.EACH_QUORUM
         });
 
         p = property("query", TypeEditor.TextAreaEditor); // $NON-NLS-1$

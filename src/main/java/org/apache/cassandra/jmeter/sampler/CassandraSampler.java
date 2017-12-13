@@ -16,7 +16,7 @@ package org.apache.cassandra.jmeter.sampler;
  */
 
 import com.datastax.driver.core.Session;
-import org.apache.cassandra.jmeter.AbstractCassandaTestElement;
+import org.apache.cassandra.jmeter.AbstractCassandraTestElement;
 import org.apache.cassandra.jmeter.config.CassandraConnection;
 import org.apache.jmeter.config.ConfigTestElement;
 import org.apache.jmeter.engine.util.ConfigMergabilityIndicator;
@@ -37,7 +37,7 @@ import java.util.Set;
  * A org.apache.cassandra.jmeter.sampler which understands Cassandra database requests.
  *
  */
-public class CassandraSampler extends AbstractCassandaTestElement implements Sampler, TestBean, ConfigMergabilityIndicator {
+public class CassandraSampler extends AbstractCassandraTestElement implements Sampler, TestBean, ConfigMergabilityIndicator {
     private static final Set<String> APPLIABLE_CONFIG_CLASSES = new HashSet<String>(
             Arrays.asList(new String[]{
                     "org.apache.jmeter.org.apache.cassandra.jmeter.config.gui.SimpleConfigGui"}));
@@ -52,8 +52,6 @@ public class CassandraSampler extends AbstractCassandaTestElement implements Sam
     public CassandraSampler() {
     }
 
-    
-    @Override	
     public SampleResult sample(Entry e) {
         log.debug("sampling CQL");
 
